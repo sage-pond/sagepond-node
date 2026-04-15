@@ -1,4 +1,4 @@
-# Sagepond API SDK
+# SAGE POND API SDK
 
 TypeScript/JavaScript SDK and CLI for talking to the SAGE POND API.
 
