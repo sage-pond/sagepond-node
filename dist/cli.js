@@ -29,6 +29,7 @@ var import_commander = require("commander");
 // src/client.ts
 var import_axios = __toESM(require("axios"));
 var import_promises = __toESM(require("fs/promises"));
+var import_zod = require("zod");
 
 // src/chunker.ts
 function chunkText(text, limitBytes = 2 * 1024 * 1024) {
@@ -58,16 +59,25 @@ function chunkText(text, limitBytes = 2 * 1024 * 1024) {
 }
 
 // src/client.ts
+var SagepondOptionsSchema = import_zod.z.object({
+  apiKey: import_zod.z.string().optional(),
+  baseUrl: import_zod.z.string().url().optional()
+});
 var SagepondClient = class {
   client;
   apiKey;
+  // Resource-based namespacing
+  models = {
+    list: (options) => this.send("models/list", "", options)
+  };
   constructor(options = {}) {
-    this.apiKey = options.apiKey || process.env.SP_KEY || "";
+    const validated = SagepondOptionsSchema.parse(options);
+    this.apiKey = validated.apiKey || process.env.SP_KEY || "";
     if (!this.apiKey) {
       throw new Error("API key must be provided either in options or via the SP_KEY environment variable.");
     }
     this.client = import_axios.default.create({
-      baseURL: options.baseUrl || "https://api.sagepond.com/v1",
+      baseURL: validated.baseUrl || "https://api.sagepond.com/v1",
       headers: {
         "Authorization": `Bearer ${this.apiKey}`,
         "Content-Type": "application/json",
@@ -77,23 +87,62 @@ var SagepondClient = class {
     this.client.defaults.headers.common = {};
   }
   /**
-   * Send a single chunk to the API
+   * Send a request to the API with optional streaming support.
+   * Returns AsyncIterable if stream is true, otherwise returns the JSON response.
    */
-  async send(mode, content) {
+  async send(mode, content, options = {}) {
+    const isStream = options.stream === true;
     try {
-      const data = JSON.stringify({
-        text: content
+      const payload = {
+        text: content,
+        stream: isStream
+      };
+      const response = await this.client.post(`/${mode}`, payload, {
+        responseType: isStream ? "stream" : "json"
       });
-      const response = await this.client.post(`/${mode}`, data);
+      if (isStream) {
+        return this.streamIterator(response.data);
+      }
       return response.data;
     } catch (error) {
       if (import_axios.default.isAxiosError(error)) {
         const status = error.response?.status;
-        const data = JSON.stringify(error.response?.data || {});
-        throw new Error(`SAGE POND API Error: ${status} - ${data}`);
+        const data = error.response?.data;
+        const message = typeof data === "object" ? JSON.stringify(data) : data;
+        throw new Error(`SAGE POND API Error: ${status} - ${message}`);
       }
       throw error;
     }
+  }
+  /**
+   * Helper to convert a Node.js Readable stream into an AsyncIterable
+   */
+  async *streamIterator(stream) {
+    for await (const chunk of stream) {
+      const text = chunk.toString();
+      yield text;
+    }
+  }
+  /**
+   * Returns the underlying response as a ReadableStream (Web API)
+   */
+  async sendAsReadableStream(mode, content, options = {}) {
+    const isStream = options.stream === true;
+    const payload = { text: content, stream: isStream };
+    const response = await this.client.post(`/${mode}`, payload, {
+      responseType: "stream"
+    });
+    const nodeStream = response.data;
+    return new ReadableStream({
+      start(controller) {
+        nodeStream.on("data", (chunk) => controller.enqueue(chunk));
+        nodeStream.on("end", () => controller.close());
+        nodeStream.on("error", (err) => controller.error(err));
+      },
+      cancel() {
+        nodeStream.destroy();
+      }
+    });
   }
   /**
    * Process a text file sequentially, chunking at 4MB sentence boundaries.

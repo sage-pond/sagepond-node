@@ -1,25 +1,41 @@
-import axios, { AxiosInstance } from 'axios';
+import axios, { AxiosInstance, ResponseType } from 'axios';
 import fs from 'fs/promises';
+import { z } from 'zod';
 import { chunkText } from './chunker';
 
-export interface SagepondOptions {
-  apiKey?: string;
-  baseUrl?: string;
+// Define schemas for validation
+const SagepondOptionsSchema = z.object({
+  apiKey: z.string().optional(),
+  baseUrl: z.string().url().optional(),
+});
+
+export type SagepondOptions = z.infer<typeof SagepondOptionsSchema>;
+
+export interface SendOptions {
+  stream?: boolean;
 }
 
 export class SagepondClient {
   private client: AxiosInstance;
   private apiKey: string;
 
+  // Resource-based namespacing
+  public models = {
+    list: (options?: SendOptions) => this.send('models/list', '', options),
+  };
+
   constructor(options: SagepondOptions = {}) {
-    this.apiKey = options.apiKey || process.env.SP_KEY || '';
+    // Validate options
+    const validated = SagepondOptionsSchema.parse(options);
+
+    this.apiKey = validated.apiKey || process.env.SP_KEY || '';
 
     if (!this.apiKey) {
       throw new Error('API key must be provided either in options or via the SP_KEY environment variable.');
     }
 
     this.client = axios.create({
-      baseURL: options.baseUrl || 'https://api.sagepond.com/v1',
+      baseURL: validated.baseUrl || 'https://api.sagepond.com/v1',
       headers: {
         'Authorization': `Bearer ${this.apiKey}`,
         'Content-Type': 'application/json',
@@ -32,25 +48,73 @@ export class SagepondClient {
   }
 
   /**
-   * Send a single chunk to the API
+   * Send a request to the API with optional streaming support.
+   * Returns AsyncIterable if stream is true, otherwise returns the JSON response.
    */
-  async send(mode: string, content: string): Promise<any> {
+  async send(mode: string, content: string, options: SendOptions = {}): Promise<any | AsyncIterable<string>> {
+    const isStream = options.stream === true;
+
     try {
-      // Manually stringify the data to ensure it's a string before sending
-      const data = JSON.stringify({
-        text: content
+      const payload = {
+        text: content,
+        stream: isStream
+      };
+
+      const response = await this.client.post(`/${mode}`, payload, {
+        responseType: (isStream ? 'stream' : 'json') as ResponseType,
       });
-      // Send the text content in the body with the key "text"
-      const response = await this.client.post(`/${mode}`, data);
+
+      if (isStream) {
+        return this.streamIterator(response.data);
+      }
+
       return response.data;
     } catch (error: any) {
       if (axios.isAxiosError(error)) {
         const status = error.response?.status;
-        const data = JSON.stringify(error.response?.data || {});
-        throw new Error(`SAGE POND API Error: ${status} - ${data}`);
+        const data = error.response?.data;
+        const message = typeof data === 'object' ? JSON.stringify(data) : data;
+        throw new Error(`SAGE POND API Error: ${status} - ${message}`);
       }
       throw error;
     }
+  }
+
+  /**
+   * Helper to convert a Node.js Readable stream into an AsyncIterable
+   */
+  private async *streamIterator(stream: any): AsyncIterable<string> {
+    for await (const chunk of stream) {
+      const text = chunk.toString();
+      // Handle potential Server-Sent Events (SSE) formatting if needed
+      // For now, just yield the raw text chunks
+      yield text;
+    }
+  }
+
+  /**
+   * Returns the underlying response as a ReadableStream (Web API)
+   */
+  async sendAsReadableStream(mode: string, content: string, options: SendOptions = {}): Promise<ReadableStream> {
+    const isStream = options.stream === true;
+    const payload = { text: content, stream: isStream };
+
+    const response = await this.client.post(`/${mode}`, payload, {
+      responseType: 'stream',
+    });
+
+    const nodeStream = response.data;
+
+    return new ReadableStream({
+      start(controller) {
+        nodeStream.on('data', (chunk: any) => controller.enqueue(chunk));
+        nodeStream.on('end', () => controller.close());
+        nodeStream.on('error', (err: any) => controller.error(err));
+      },
+      cancel() {
+        nodeStream.destroy();
+      }
+    });
   }
 
   /**

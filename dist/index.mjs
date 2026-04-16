@@ -1,7 +1,7 @@
 import {
   SagepondClient,
   chunkText
-} from "./chunk-XVV6K4PG.mjs";
+} from "./chunk-GJ2J7TUW.mjs";
 export {
   SagepondClient,
   chunkText
