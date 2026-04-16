@@ -1,11 +1,11 @@
 interface SagepondOptions {
-    apiKey: string;
+    apiKey?: string;
     baseUrl?: string;
 }
 declare class SagepondClient {
     private client;
     private apiKey;
-    constructor(options: SagepondOptions);
+    constructor(options?: SagepondOptions);
     /**
      * Send a single chunk to the API
      */

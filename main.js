@@ -1,8 +1,6 @@
 const { SagepondClient } = require('./dist/index.js');
 
-const client = new SagepondClient({
-    apiKey: 'API_KEY',
-});
+const client = new SagepondClient();
 
 // Test with a dummy file if you want to run this locally:
 // fs.writeFileSync('test.txt', 'This is a test sentence. This is another one.');

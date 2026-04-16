@@ -31,8 +31,11 @@ import fs from "fs/promises";
 var SagepondClient = class {
   client;
   apiKey;
-  constructor(options) {
-    this.apiKey = options.apiKey;
+  constructor(options = {}) {
+    this.apiKey = options.apiKey || process.env.SP_KEY || "";
+    if (!this.apiKey) {
+      throw new Error("API key must be provided either in options or via the SP_KEY environment variable.");
+    }
     this.client = axios.create({
       baseURL: options.baseUrl || "https://api.sagepond.com/v1",
       headers: {

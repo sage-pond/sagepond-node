@@ -70,8 +70,11 @@ function chunkText(text, limitBytes = 2 * 1024 * 1024) {
 var SagepondClient = class {
   client;
   apiKey;
-  constructor(options) {
-    this.apiKey = options.apiKey;
+  constructor(options = {}) {
+    this.apiKey = options.apiKey || process.env.SP_KEY || "";
+    if (!this.apiKey) {
+      throw new Error("API key must be provided either in options or via the SP_KEY environment variable.");
+    }
     this.client = import_axios.default.create({
       baseURL: options.baseUrl || "https://api.sagepond.com/v1",
       headers: {

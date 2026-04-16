@@ -1,7 +1,7 @@
 {
   "name": "sagepond-api-sdk",
   "version": "1.0.0",
-  "description": "SDK for Sagepond API with 5MB sentence-aware chunking",
+  "description": "SDK for SAGE POND API",
   "main": "./dist/index.js",
   "module": "./dist/index.mjs",
   "types": "./dist/index.d.ts",

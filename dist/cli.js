@@ -61,8 +61,11 @@ function chunkText(text, limitBytes = 2 * 1024 * 1024) {
 var SagepondClient = class {
   client;
   apiKey;
-  constructor(options) {
-    this.apiKey = options.apiKey;
+  constructor(options = {}) {
+    this.apiKey = options.apiKey || process.env.SP_KEY || "";
+    if (!this.apiKey) {
+      throw new Error("API key must be provided either in options or via the SP_KEY environment variable.");
+    }
     this.client = import_axios.default.create({
       baseURL: options.baseUrl || "https://api.sagepond.com/v1",
       headers: {
@@ -120,7 +123,7 @@ var SagepondClient = class {
 var import_path = __toESM(require("path"));
 var program = new import_commander.Command();
 program.name("sagepond").description("CLI to interact with Sagepond API with automatic file chunking").version("1.0.0");
-program.command("process").description("Process a text file through the Sagepond API").requiredOption("-f, --file <path>", "Path to the text file").requiredOption("-k, --key <apiKey>", "SAGE POND API Key").requiredOption("-m, --mode <mode>", "API endpoint mode (e.g. segment)").action(async (options) => {
+program.command("process").description("Process a text file through the Sagepond API").requiredOption("-f, --file <path>", "Path to the text file").option("-k, --key <apiKey>", "SAGE POND API Key (or set SP_KEY env var)").requiredOption("-m, --mode <mode>", "API endpoint mode (e.g. segment)").action(async (options) => {
   try {
     const filePath = import_path.default.resolve(process.cwd(), options.file);
     const client = new SagepondClient({ apiKey: options.key });

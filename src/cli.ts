@@ -14,7 +14,7 @@ program
   .command('process')
   .description('Process a text file through the Sagepond API')
   .requiredOption('-f, --file <path>', 'Path to the text file')
-  .requiredOption('-k, --key <apiKey>', 'SAGE POND API Key')
+  .option('-k, --key <apiKey>', 'SAGE POND API Key (or set SP_KEY env var)')
   .requiredOption('-m, --mode <mode>', 'API endpoint mode (e.g. segment)')
   .action(async (options) => {
     try {

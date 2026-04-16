@@ -7,10 +7,15 @@
     "forceConsistentCasingInFileNames": true,
     "strict": true,
     "skipLibCheck": true,
-    "types": ["node"],
+    "types": [
+      "node"
+    ],
     "declaration": true,
     "outDir": "dist",
     "ignoreDeprecations": "6.0"
   },
-  "include": ["src/**/*"]
+  "include": [
+    "src/**/*",
+    "tests/chunker.test.ts"
+  ]
 }
