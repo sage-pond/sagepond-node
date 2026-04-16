@@ -15,12 +15,13 @@ This project is still not yet ready. The package is in active development, the A
 ## Installation
 
 ```
-Coming soon....
+npm i @sage-pond/sdk
 ```
 
 For local development inside this repository:
 
 ```bash
+git clone https://github.com/sage-pond/sagepond-node.git
 npm install
 npm run build
 ```
