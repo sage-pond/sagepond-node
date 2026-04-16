@@ -21,7 +21,7 @@ export function chunkText(text: string, limitBytes: number = 2 * 1024 * 1024): s
     }
 
     if (currentChunkBytes + sentenceBytes > limitBytes) {
-      chunks.push(currentChunk.trim().replace(/[\r\n\t\\r]/g, ' '));
+      chunks.push(currentChunk.trim().replace(/[\r\n\t\r]/g, ' '));
       currentChunk = sentence;
       currentChunkBytes = sentenceBytes;
     } else {

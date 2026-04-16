@@ -53,7 +53,7 @@ function chunkText(text, limitBytes = 2 * 1024 * 1024) {
       throw new Error(`A single sentence exceeds the ${limitBytes / (1024 * 1024)}MB limit. Content: ${sentence.substring(0, 100)}...`);
     }
     if (currentChunkBytes + sentenceBytes > limitBytes) {
-      chunks.push(currentChunk.trim().replace(/[\r\n\t\\r]/g, " "));
+      chunks.push(currentChunk.trim().replace(/[\r\n\t\r]/g, " "));
       currentChunk = sentence;
       currentChunkBytes = sentenceBytes;
     } else {
