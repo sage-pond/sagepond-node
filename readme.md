@@ -9,7 +9,7 @@ This project is still not yet ready. The package is in active development, the A
 ## What It Includes
 
 - A `SagepondClient` for programmatic API access
-- Sentence-aware text chunking to keep requests under a byte limit
+- Hierarchical text chunking (Paragraphs -> Sentences -> Words) to keep requests under a byte limit
 - CommonJS, ESM, and TypeScript type output in `dist/`
 
 ## Installation
@@ -39,15 +39,13 @@ Coming soon....
 
 ## Chunking Behavior
 
-The SDK exports `chunkText()` for byte-limited chunking with sentence-ending fallback boundaries:
+The SDK exports `chunkText()` for byte-limited chunking using a hierarchical approach.
 
-Current behavior:
-
-- Default chunk limit is `2 MB`
-- The byte limit is the main rule for chunking
-- Sentence endings such as `.`, `!`, and `?` are used as preferred safe split boundaries
-- If a single sentence exceeds the configured limit, an error is thrown
-- File processing sends chunks sequentially, not in parallel
+- **Hierarchy of Separators**: It attempts to split by paragraphs (`\n\n`), then lines (`\n`), then sentences (`. `, `! `, `? `), and finally spaces (` `).
+- **Adaptive Splitting**: It only moves to a smaller separator if a chunk still exceeds the limit.
+- **Byte Limit**: Default chunk limit is `2 MB`.
+- **Oversized Chunks**: If a block of text exceeds the limit and cannot be split further by any separator (e.g., a single massive string with no spaces), it is skipped with a warning to ensure the process continues.
+- **Sequential Processing**: File processing sends chunks one after another to maintain order.
 
 ## Development
 
@@ -61,10 +59,11 @@ npm run test
 
 ## Current Limitations
 
-- The sentence-ending detection is intentionally simple and may not handle every language or edge case correctly
-- CLI input currently expects the API key as a flag rather than from environment variables
-- Error handling is basic and returns raw API error payloads inside thrown messages
-- The README examples reflect the current code, not a finalized public API guarantee
+- Chunks that cannot be split below the byte limit using the defined separators are skipped.
+- CLI input currently expects the API key as a flag rather than from environment variables.
+- Error handling is basic and returns raw API error payloads inside thrown messages.
+- The README examples reflect the current code, not a finalized public API guarantee.
+
 
 ## License
 

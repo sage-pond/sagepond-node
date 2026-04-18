@@ -31,8 +31,27 @@ describe('chunkText Stress Test (Large Content)', () => {
     expect(combined.length).toBeGreaterThan(largeText.length * 0.99);
   });
 
-  it('should still throw error if a single sentence is too big', () => {
-    const hugeSentence = "A".repeat(1024 * 1024 * 5) + ".";
-    expect(() => chunkText(hugeSentence, 4 * 1024 * 1024)).toThrow(/exceeds/);
+  it('should skip a single block that is too big even after all separators', () => {
+    const hugeWord = "A".repeat(1024 * 1024 * 5); // 5MB word
+    const text = "Small sentence. " + hugeWord + " Another small sentence.";
+    const limit4MB = 4 * 1024 * 1024;
+    
+    const chunks = chunkText(text, limit4MB);
+    
+    // It should have skipped the hugeWord but kept the small sentences
+    expect(chunks.length).toBe(2);
+    expect(chunks[0]).toBe("Small sentence.");
+    expect(chunks[1]).toBe("Another small sentence.");
+  });
+
+  it('should use hierarchical splitting (prefer paragraphs, then sentences)', () => {
+    const text = "Para 1 sentence 1. Para 1 sentence 2.\n\nPara 2 sentence 1.";
+    // Limit that fits one paragraph but not both
+    const limit = Buffer.byteLength("Para 1 sentence 1. Para 1 sentence 2.\n\n");
+    
+    const chunks = chunkText(text, limit);
+    
+    expect(chunks[0]).toBe("Para 1 sentence 1. Para 1 sentence 2.");
+    expect(chunks[1]).toBe("Para 2 sentence 1.");
   });
 });
