@@ -1,11 +1,13 @@
 const { SagepondClient } = require('./dist/index.js');
 
-const client = new SagepondClient();
+const client = new SagepondClient({
+    apiKey: 'sp_QT0pKO9XU6Vu8iui3C8Ocpooi3BvSg92'
+});
 
 // Test with a dummy file if you want to run this locally:
 // fs.writeFileSync('test.txt', 'This is a test sentence. This is another one.');
 
-client.processFile('<file_path>', '<mode>')
+client.processFile('train_text.txt', 'tokenize')
     .then(results => {
         console.log('Processed results:', JSON.stringify(results, null, 2));
     })

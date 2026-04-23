@@ -26,9 +26,32 @@ npm install
 npm run build
 ```
 
+## Usage
 
+### Initialize the Client
 
-### Process a File
+```javascript
+const { SagepondClient } = require('@sage-pond/sdk');
+
+const client = new SagepondClient({
+  apiKey: 'your_api_key_here',
+  baseUrl: 'https://api.sagepond.com/v1' // Optional
+});
+```
+
+You can also set the API key via the `SP_KEY` environment variable.
+
+### Basic Usage
+
+```javascript
+const client = new SagepondClient({ apiKey: 'your_api_key' });
+
+// Process a text file
+client.processFile('path/to/file.txt', 'tokenize')
+  .then(results => console.log(results))
+  .catch(err => console.error(err));
+```
+
 
 `processFile()` reads a text file, splits it into byte-limited chunks, prefers sentence endings as safe boundaries where possible, and sends those chunks sequentially to the selected endpoint.
 

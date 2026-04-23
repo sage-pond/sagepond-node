@@ -1,6 +1,6 @@
 {
   "name": "@sage-pond/sdk",
-  "version": "1.0.0-alpha.1",
+  "version": "1.0.0-alpha.2",
   "description": "SDK for SAGE POND API",
   "main": "./dist/index.js",
   "module": "./dist/index.mjs",
@@ -8,6 +8,7 @@
   "bin": {
     "sagepond": "./dist/cli.js"
   },
+  "repository": "sage-pond/sagepond-node",
   "files": [
     "dist"
   ],
