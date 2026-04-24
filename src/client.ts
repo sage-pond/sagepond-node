@@ -1,5 +1,6 @@
 import axios, { AxiosInstance, ResponseType } from 'axios';
 import fs from 'fs/promises';
+import path from 'path';
 import { z } from 'zod';
 import { chunkText } from './chunker';
 
@@ -48,6 +49,31 @@ export class SagepondClient {
   }
 
   /**
+   * Logs an error to the .sp_logs directory.
+   */
+  private async logError(error: any): Promise<void> {
+    try {
+      const logsDir = path.join(process.cwd(), '.sp_logs');
+      await fs.mkdir(logsDir, { recursive: true });
+
+      const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+      const logFile = path.join(logsDir, `error-${timestamp}.log`);
+      const errorContent = {
+        timestamp: new Date().toISOString(),
+        message: error.message,
+        stack: error.stack,
+        details: error
+      };
+
+      await fs.writeFile(logFile, JSON.stringify(errorContent, null, 2), 'utf-8');
+      process.stderr.write(`\nError logged to: ${logFile}\n`);
+    } catch (logErr) {
+      // If logging itself fails, just print to stderr as a fallback
+      process.stderr.write(`\nFailed to log error to disk: ${logErr}\n`);
+    }
+  }
+
+  /**
    * Send a request to the API with optional streaming support.
    * Returns AsyncIterable if stream is true, otherwise returns the JSON response.
    */
@@ -70,6 +96,7 @@ export class SagepondClient {
 
       return response.data;
     } catch (error: any) {
+      await this.logError(error);
       if (axios.isAxiosError(error)) {
         const status = error.response?.status;
         const data = error.response?.data;
@@ -118,6 +145,32 @@ export class SagepondClient {
   }
 
   /**
+   * Helper to format results into a CSV string with a template header.
+   */
+  private formatToCsv(results: any[]): string {
+    const header = 'no.,sentence';
+    const rows = [header];
+    let counter = 1;
+
+    for (const result of results) {
+      // Normalize result to an array (the API might return an array of strings or an object with sentences)
+      const items = Array.isArray(result) ? result : 
+                    (result && typeof result === 'object' && result.sentences) ? result.sentences :
+                    [result];
+
+      for (const item of items) {
+        if (item === undefined || item === null) continue;
+        
+        // Escape quotes for CSV and wrap in quotes
+        const sentence = String(item).replace(/"/g, '""');
+        rows.push(`${counter++},"${sentence}"`);
+      }
+    }
+
+    return rows.join('\n');
+  }
+
+  /**
    * Process a text file sequentially, chunking at 4MB sentence boundaries.
    */
   async processFile(filePath: string, mode: string): Promise<any[]> {
@@ -137,6 +190,16 @@ export class SagepondClient {
       }
       // Final progress state
       process.stdout.write(`\rChunks: [Processing: 0] [Finished: ${total}] Total: ${total}\n`);
+
+      // If mode is tokenize, write to CSV
+      if (mode === 'tokenize') {
+        const csvContent = this.formatToCsv(results);
+        const parsedPath = path.parse(filePath);
+        const outputFilePath = path.join(parsedPath.dir, `${parsedPath.name}.csv`);
+        
+        await fs.writeFile(outputFilePath, csvContent, 'utf-8');
+        console.log(`\nTokenization complete. Output written to: ${outputFilePath}`);
+      }
     } catch (error) {
       process.stdout.write('\n'); // Ensure error message starts on a new line
       throw error;
