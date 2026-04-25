@@ -41,6 +41,7 @@ export class SagepondClient {
         'Authorization': `Bearer ${this.apiKey}`,
         'Content-Type': 'application/json',
         'Accept': 'application/json',
+        'User-Agent': 'Sagepond/1.0.0'
       },
     });
 
@@ -81,10 +82,10 @@ export class SagepondClient {
     const isStream = options.stream === true;
 
     try {
-      const payload = {
+      const payload = JSON.parse(JSON.stringify({
         text: content,
         stream: isStream
-      };
+      }));
 
       const response = await this.client.post(`/${mode}`, payload, {
         responseType: (isStream ? 'stream' : 'json') as ResponseType,
@@ -124,7 +125,7 @@ export class SagepondClient {
    */
   async sendAsReadableStream(mode: string, content: string, options: SendOptions = {}): Promise<ReadableStream> {
     const isStream = options.stream === true;
-    const payload = { text: content, stream: isStream };
+    const payload = JSON.parse(JSON.stringify({ text: content, stream: isStream }));
 
     const response = await this.client.post(`/${mode}`, payload, {
       responseType: 'stream',
@@ -154,13 +155,13 @@ export class SagepondClient {
 
     for (const result of results) {
       // Normalize result to an array (the API might return an array of strings or an object with sentences)
-      const items = Array.isArray(result) ? result : 
-                    (result && typeof result === 'object' && result.sentences) ? result.sentences :
-                    [result];
+      const items = Array.isArray(result) ? result :
+        (result && typeof result === 'object' && result.sentences) ? result.sentences :
+          [result];
 
       for (const item of items) {
         if (item === undefined || item === null) continue;
-        
+
         // Escape quotes for CSV and wrap in quotes
         const sentence = String(item).replace(/"/g, '""');
         rows.push(`${counter++},"${sentence}"`);
@@ -196,7 +197,7 @@ export class SagepondClient {
         const csvContent = this.formatToCsv(results);
         const parsedPath = path.parse(filePath);
         const outputFilePath = path.join(parsedPath.dir, `${parsedPath.name}.csv`);
-        
+
         await fs.writeFile(outputFilePath, csvContent, 'utf-8');
         console.log(`\nTokenization complete. Output written to: ${outputFilePath}`);
       }
