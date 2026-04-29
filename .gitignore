@@ -3,3 +3,4 @@ train_text.txt
 .npmignore
 dist/*
 .sp_logs
+main.js

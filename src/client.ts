@@ -3,6 +3,7 @@ import fs from 'fs/promises';
 import path from 'path';
 import { z } from 'zod';
 import { chunkText } from './chunker';
+import './error-map';
 
 // Define schemas for validation
 const SagepondOptionsSchema = z.object({

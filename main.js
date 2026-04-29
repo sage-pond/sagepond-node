@@ -1,7 +1,7 @@
 const { SagepondClient } = require('./dist/index.js');
 
 const client = new SagepondClient({
-    apiKey: 'sp_QT0pKO9XU6Vu8iui3C8Ocpooi3BvSg92'
+    apiKey: process.env.SP_KEY
 });
 
 // Test with a dummy file if you want to run this locally:
