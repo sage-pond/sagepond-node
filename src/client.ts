@@ -17,6 +17,10 @@ export interface SendOptions {
   stream?: boolean;
 }
 
+export interface ProcessFileOptions {
+  outputCsvPath?: string;
+}
+
 export class SagepondClient {
   private client: AxiosInstance;
   private apiKey: string;
@@ -175,7 +179,7 @@ export class SagepondClient {
   /**
    * Process a text file sequentially, chunking at 4MB sentence boundaries.
    */
-  async processFile(filePath: string, mode: string): Promise<any[]> {
+  async processFile(filePath: string, mode: string, options: ProcessFileOptions = {}): Promise<any[]> {
     const text = await fs.readFile(filePath, 'utf-8');
     const chunks = chunkText(text);
     const total = chunks.length;
@@ -197,8 +201,12 @@ export class SagepondClient {
       if (mode === 'tokenize') {
         const csvContent = this.formatToCsv(results);
         const parsedPath = path.parse(filePath);
-        const outputFilePath = path.join(parsedPath.dir, `${parsedPath.name}.csv`);
+        const outputFilePath = options.outputCsvPath
+          ? path.resolve(options.outputCsvPath)
+          : path.join(parsedPath.dir, `${parsedPath.name}.csv`);
+        const outputDir = path.dirname(outputFilePath);
 
+        await fs.mkdir(outputDir, { recursive: true });
         await fs.writeFile(outputFilePath, csvContent, 'utf-8');
         console.log(`\nTokenization complete. Output written to: ${outputFilePath}`);
       }

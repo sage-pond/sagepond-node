@@ -47,18 +47,41 @@ You can also set the API key via the `SP_KEY` environment variable.
 const client = new SagepondClient({ apiKey: 'your_api_key' });
 
 // Process a text file
-client.processFile('path/to/file.txt', 'tokenize')
-  .then(results => console.log(results))
-  .catch(err => console.error(err));
+const results = await client.processFile('path/to/file.txt', 'tokenize');
+console.log(results);
 ```
 
+To write tokenized CSV output to a custom location:
+
+```javascript
+const results = await client.processFile('path/to/file.txt', 'tokenize', {
+  outputCsvPath: 'path/to/output/results.csv'
+});
+console.log(results);
+```
 
 `processFile()` reads a text file, splits it into byte-limited chunks, prefers sentence endings as safe boundaries where possible, and sends those chunks sequentially to the selected endpoint.
+
+When `mode` is `tokenize`, the SDK writes CSV output. By default it writes beside the input file using the same base name with a `.csv` extension. You can override that with `outputCsvPath`.
+
+Method signature:
+
+```ts
+processFile(
+  filePath: string,
+  mode: string,
+  options?: { outputCsvPath?: string }
+): Promise<any[]>
+```
 
 
 ## CLI Usage
 
-Coming soon....
+```bash
+sagepond process --file ./input.txt --mode tokenize --output ./exports/output.csv
+```
+
+If `--output` is omitted in `tokenize` mode, the CSV is written next to the input file.
 
 ## Chunking Behavior
 

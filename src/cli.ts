@@ -16,13 +16,16 @@ program
   .requiredOption('-f, --file <path>', 'Path to the text file')
   .option('-k, --key <apiKey>', 'SAGE POND API Key (or set SP_KEY env var)')
   .requiredOption('-m, --mode <mode>', 'API endpoint mode (e.g. segment)')
+  .option('-o, --output <path>', 'Optional output path for tokenize CSV results')
   .action(async (options) => {
     try {
       const filePath = path.resolve(process.cwd(), options.file);
       const client = new SagepondClient({ apiKey: options.key });
 
       console.log(`Processing file: ${filePath} in mode: ${options.mode}`);
-      const results = await client.processFile(filePath, options.mode);
+      const results = await client.processFile(filePath, options.mode, {
+        outputCsvPath: options.output,
+      });
 
       console.log('Successfully processed chunks:');
       console.log(JSON.stringify(results, null, 2));
